@@ -50,7 +50,7 @@ kotlin {
         target.binaries.framework {
             baseName = libraryName
             xcFramework.add(this)
-            // isStatic = true
+            isStatic = true
         }
 
     }
