@@ -1,6 +1,7 @@
 package com.example.shared
 import kotlin.js.JsExport
 
+@OptIn(kotlin.js.ExperimentalJsExport::class)
 @JsExport
 class PlatformInfo {
 
@@ -11,10 +12,13 @@ class PlatformInfo {
     }
 
     fun getPlatformName(): String {
+        println("Platform Name ${platform.name}")
+
         return platform.name
     }
 
     fun getPlatformVersion(): Double {
+        println("Platform Version ${platform.version}")
         return platform.version
     }
 
