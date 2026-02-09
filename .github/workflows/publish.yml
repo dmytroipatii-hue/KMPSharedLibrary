@@ -1,115 +1,92 @@
 name: Release KMP Library
 
 on:
-  push:
-    tags:
-      - "v*"
+    push:
+        tags:
+            - "v*"
 permissions:
-  contents: write
+    contents: write
   
 jobs:
-  release:
-    runs-on: macos-latest
+    release:
+        runs-on: macos-latest
 
-    env:
-        FRAMEWORK_NAME: KMPSharedLibrary
-        GROUP_ID: com.yourcompany
-        ARTIFACT_ID: shared-logic
-        USER_NAME: ${{ secrets.USER_NAME }}
-        ACCESS_TOKEN: ${{secrets.DEV_ACCESS_TOKEN}}
+        env:
+            FRAMEWORK_NAME: KMPSharedLibrary
+            GROUP_ID: com.yourcompany
+            ARTIFACT_ID: shared-logic
+            USER_NAME: ${{ secrets.USER_NAME }}
+            ACCESS_TOKEN: ${{secrets.DEV_ACCESS_TOKEN}}
 
-    steps:
-      # ---------------------------
-      # Checkout & setup
-      # ---------------------------
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            # ---------------------------
+            # Checkout & setup
+            # ---------------------------
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+            - name: Set up JDK
+              uses: actions/setup-java@v4
+              with:
+                distribution: temurin
+                java-version: 17
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
+            - name: Cache Gradle
+              uses: actions/cache@v4
+              with:
+                path: |
+                    ~/.gradle/caches
+                    ~/.gradle/wrapper
+                key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
 
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+            - name: Extract version
+              id: version
+              run: |
+                VERSION=${GITHUB_REF#refs/tags/v}
+                echo "version=$VERSION" >> $GITHUB_OUTPUT
 
 
-      # ---------------------------
-      # iOS: Build XCFramework
-      # ---------------------------
-      - name: Build XCFramework
-        run: ./gradlew assemble${{ env.FRAMEWORK_NAME }}XCFramework
+            # ---------------------------
+            # iOS: Build XCFramework
+            # ---------------------------
+            - name: Build XCFramework
+              run: ./gradlew assemble${{ env.FRAMEWORK_NAME }}XCFramework
 
-      - name: Zip XCFramework
-        run: |
-          cd shared/build/XCFrameworks/release
-          zip -r ${{ env.FRAMEWORK_NAME }}.xcframework.zip \
-            ${{ env.FRAMEWORK_NAME }}.xcframework
+            # ---------------------------
+            # GitHub Release (iOS binary)
+            # ---------------------------
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+               name: ${{ steps.version.outputs.version }}
+               tag_name: v${{ steps.version.outputs.version }}
+            #   files: |
+            #     shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework.zip
 
-      # ---------------------------
-      # GitHub Release (iOS binary)
-      # ---------------------------
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ steps.version.outputs.version }}
-          tag_name: v${{ steps.version.outputs.version }}
-          files: |
-            shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework.zip
+            # ---------------------------
+            # iOS: Copy Build XCFramework To SPW wrapper repo
+            # ---------------------------
+            - name: Push XCFramework to SPW repo
+              uses: dmnemec/copy_file_to_another_repo_action@main
+              with:
+                source_file: 'shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework'
+                destination_repo: 'https://x-access-token:${{ env.ACCESS_TOKEN }}@github.com/dmytroipatii-hue/SPMSharedLibrary.git'
+                user_name: ${{env.USER_NAME}}
+                commit_message: 'Release ${{ steps.version.outputs.version }}'
 
-      # ---------------------------
-      # iOS: Update SPM wrapper repo
-      # ---------------------------
-      - name: Compute checksum
-        id: checksum
-        run: |
-          CHECKSUM=$(swift package compute-checksum \
-            shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework.zip)
-          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+            # ---------------------------
+            # iOS: Update SPM wrapper repo
+            # ---------------------------
+            - name: Compute checksum
+              id: checksum
+              run: |
+                CHECKSUM=$(swift package compute-checksum \
+                shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework.zip)
+                echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
 
-      - name: Update SPM repo
-        run: |
-          git clone https://x-access-token:${{ env.ACCESS_TOKEN }}@github.com/dmytroipatii-hue/SPMSharedLibrary.git
-          cd SPMSharedLibrary
-
-          cat > Package.swift <<EOF
-          // swift-tools-version: 5.9
-          import PackageDescription
-
-          let package = Package(
-              name: "${{ env.FRAMEWORK_NAME }}",
-              platforms: [
-                  .iOS(.v14)
-              ],
-              products: [
-                  .library(
-                      name: "${{ env.FRAMEWORK_NAME }}",
-                      targets: ["${{ env.FRAMEWORK_NAME }}"]
-                  )
-              ],
-              targets: [
-                  .binaryTarget(
-                      name: "${{ env.FRAMEWORK_NAME }}",
-                      url: "https://github.com/dmytroipatii-hue/KMPSharedLibrary/releases/download/v${{ steps.version.outputs.version }}/${{ env.FRAMEWORK_NAME }}.xcframework.zip",
-                      checksum: "${{ steps.checksum.outputs.checksum }}"
-                  )
-              ]
-          )
-          EOF
-
-          git add Package.swift
-          git commit -m "Release ${{ steps.version.outputs.version }}"
-          git tag ${{ steps.version.outputs.version }}
-          git push origin main --tags
+            - name: Update SPM repo
+              run: |
+                git clone https://x-access-token:${{ env.ACCESS_TOKEN }}@github.com/dmytroipatii-hue/SPMSharedLibrary.git
+                git commit -m "Release ${{ steps.version.outputs.version }}"
+                git tag ${{ steps.version.outputs.version }}
+                git push origin main --tags
