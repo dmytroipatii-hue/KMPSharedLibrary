@@ -9,7 +9,7 @@ permissions:
   
 jobs:
     release:
-        runs-on: macos-latest
+        runs-on: ubuntu-latest
 
         env:
             FRAMEWORK_NAME: KMPSharedLibrary
