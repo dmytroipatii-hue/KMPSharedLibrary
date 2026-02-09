@@ -12,10 +12,13 @@ class PlatformInfo {
     }
 
     fun getPlatformName(): String {
+        println("Version 2")
+        println("Platform Name: ${platform.name}")
         return platform.name
     }
 
     fun getPlatformVersion(): Double {
+        println("Platform Version: ${platform.version}")
         return platform.version
     }
 
