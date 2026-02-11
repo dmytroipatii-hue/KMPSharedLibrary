@@ -18,7 +18,7 @@ kotlin {
         compileSdk = 36
         minSdk = 24
 
-        
+
         // Enables Java compilation support.
         // This improves build times when Java compilation is not needed
         withJava()
@@ -126,17 +126,15 @@ publishing {
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/dmytroipatii-hue/KMPSharedLibrary")
-            credentials(PasswordCredentials::class)
+            credentials {
+                username = providers.gradleProperty("githubPackagesUsername")
+                    .orElse(providers.environmentVariable("USER_NAME"))
+                    .get()
 
-//            credentials {
-//                username = providers.gradleProperty("githubPackagesUsername")
-//                    .orElse(providers.environmentVariable("USER_NAME"))
-//                    .get()
-//
-//                password = providers.gradleProperty("githubPackagesPassword")
-//                    .orElse(providers.environmentVariable("DEV_ACCESS_TOKEN"))
-//                    .get()
-//            }
+                password = providers.gradleProperty("githubPackagesPassword")
+                    .orElse(providers.environmentVariable("DEV_ACCESS_TOKEN"))
+                    .get()
+            }
         }
     }
 }
