@@ -68,17 +68,15 @@ jobs:
               run: |
                 # Clone SPM repo
                 git clone https://x-access-token:${{ secrets.DEV_ACCESS_TOKEN }}@github.com/${{secrets.USER_NAME}}/SPMSharedLibrary.git
-                cd SPMSharedLibrary
+                cd SPMSharedLibrary/Sources
 
                 # Clean old framework
-                cd Sources
                 rm -rf ${{ env.FRAMEWORK_NAME }}.xcframework
 
                 # Copy new XCFramework
                 cp -R ../shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework \
                     ${{ env.FRAMEWORK_NAME }}.xcframework
-                cd ..
-                
+
                 # Git config
                 git config user.name "${{ secrets.USER_NAME }}"
 
