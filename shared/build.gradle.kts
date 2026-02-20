@@ -63,7 +63,10 @@ private fun Project.configureAndroidLibrary() {
 private fun Project.configureIOSLibrary() {
     extensions.configure(KotlinMultiplatformExtension::class.java) {
 
-        val frameworkName = providers.gradleProperty("FRAMEWORK_NAME").get()
+        val frameworkName = providers.gradleProperty("FRAMEWORK_NAME")
+            .orElse("KMPSharedLibrary")
+            .get()
+
         val bundleId = providers.gradleProperty("IOS_BUNDLE_ID").get()
 
         // For iOS targets, this is also where you should
@@ -155,7 +158,9 @@ kotlin {
 
 
 group = providers.gradleProperty("GROUP_ID").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+version = providers.gradleProperty("VERSION_NAME")
+    .orElse("LOCAL_VERSION_NAME")
+    .get()
 
 mavenPublishing {
 
