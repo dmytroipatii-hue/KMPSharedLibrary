@@ -83,10 +83,14 @@ private fun Project.configureIOSLibrary() {
         // project can be found here:
         // https://developer.android.com/kotlin/multiplatform/migrate
         val xcFramework = XCFramework(xcFrameworkName = frameworkName)
+        val frameworkVersion = providers.gradleProperty("VERSION_NAME")
+            .orElse("LOCAL_VERSION_NAME")
+            .get()
 
         iOSTargets.forEach { target ->
             target.binaries.framework {
                 baseName = frameworkName
+                version = frameworkVersion
                 binaryOption("bundleId", bundleId)
 
                 xcFramework.add(this)
