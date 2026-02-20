@@ -71,12 +71,14 @@ jobs:
                 cd SPMSharedLibrary
 
                 # Clean old framework
-                rm -rf ../Sources/${{ env.FRAMEWORK_NAME }}.xcframework
+                cd Sources
+                rm -rf ${{ env.FRAMEWORK_NAME }}.xcframework
 
                 # Copy new XCFramework
                 cp -R ../shared/build/XCFrameworks/release/${{ env.FRAMEWORK_NAME }}.xcframework \
-                    ../Sources/${{ env.FRAMEWORK_NAME }}.xcframework
-
+                    ${{ env.FRAMEWORK_NAME }}.xcframework
+                cd ..
+                
                 # Git config
                 git config user.name "${{ secrets.USER_NAME }}"
 
