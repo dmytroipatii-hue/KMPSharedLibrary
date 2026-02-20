@@ -4,13 +4,17 @@ plugins {
 }
 
 android {
-    namespace = "com.example.kmpsharedlibrary"
-    compileSdk = 36
+    val androidNamespace = providers.gradleProperty("ANDROID_NAMESPACE").get()
+    val compileSdkNumber = providers.gradleProperty("COMPILE_SDK").map(String::toInt).get()
+    val minSdkNumber = providers.gradleProperty("MIN_SDK").map(String::toInt).get()
+
+    namespace = androidNamespace
+    compileSdk = compileSdkNumber
 
     defaultConfig {
-        applicationId = "com.example.kmpsharedlibrary"
-        minSdk = 24
-        targetSdk = 36
+        applicationId = androidNamespace
+        minSdk = minSdkNumber
+        targetSdk = compileSdkNumber
         versionCode = 1
         versionName = "1.0"
 

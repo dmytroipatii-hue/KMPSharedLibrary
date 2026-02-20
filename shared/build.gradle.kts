@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.gradle.api.credentials.PasswordCredentials
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -8,66 +10,101 @@ plugins {
     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-kotlin {
 
+private fun Project.configureKMPLibrary() {
+    extensions.configure(KotlinMultiplatformExtension::class.java) {
+
+        // Explicit API mode
+        // This mode, the compiler performs additional checks that help make the library's API clearer and more consistent
+        // See: https://kotlinlang.org/docs/whatsnew14.html#explicit-api-mode-for-library-authors
+
+        explicitApi()
+        // explicitApiWarning()
+
+    }
+}
+private fun Project.configureAndroidLibrary() {
+    extensions.configure(KotlinMultiplatformExtension::class.java){
+
+        val androidNamespace = providers.gradleProperty("ANDROID_NAMESPACE").get()
+        val compileSdkNumber = providers.gradleProperty("COMPILE_SDK").map(String::toInt).get()
+        val minSdkNumber = providers.gradleProperty("MIN_SDK").map(String::toInt).get()
+
+        // Android target configuration based on the official Kotlin Multiplatform documentation.
+        // Documentation reference: https://kotlinlang.org/docs/multiplatform/multiplatform-publish-lib-setup.html#publish-an-android-library
+
+        androidLibrary{
+            namespace = androidNamespace
+            compileSdk = compileSdkNumber
+            minSdk = minSdkNumber
+
+            compilations.configureEach {
+                compileTaskProvider.configure{
+                    compilerOptions {
+                        jvmTarget.set(JvmTarget.JVM_11)
+                    }
+                }
+            }
+
+            // Enables Java compilation support.
+            withJava()
+            
+            withHostTestBuilder {
+            }
+
+            withDeviceTestBuilder {
+                sourceSetTreeName = "test"
+            }.configure {
+                instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            }
+        }
+    }
+}
+private fun Project.configureIOSLibrary() {
+    extensions.configure(KotlinMultiplatformExtension::class.java) {
+
+        val frameworkName = providers.gradleProperty("FRAMEWORK_NAME").get()
+        val bundleId = providers.gradleProperty("IOS_BUNDLE_ID").get()
+
+        // For iOS targets, this is also where you should
+        // configure native binary output. For more information, see:
+        // https://kotlinlang.org/docs/multiplatform-build-native-binaries.html#build-xcframeworks
+
+        val iOSTargets = listOf(
+            iosX64(),
+            iosArm64(),
+            iosSimulatorArm64()
+        )
+
+        // A step-by-step guide on how to include this library in an XCode
+        // project can be found here:
+        // https://developer.android.com/kotlin/multiplatform/migrate
+        val xcFramework = XCFramework(xcFrameworkName = frameworkName)
+
+        iOSTargets.forEach { target ->
+            target.binaries.framework {
+                baseName = frameworkName
+                binaryOption("bundleId", bundleId)
+
+                xcFramework.add(this)
+                debuggable = false
+                isStatic = true
+            }
+
+        }
+    }
+}
+
+
+kotlin {
     // Target declarations - add or remove as needed below. These define
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
-    androidLibrary {
-        namespace = "io.github.kmpsharedlibrary"
-        compileSdk = 36
-        minSdk = 24
+    configureKMPLibrary()
 
+    configureAndroidLibrary()
 
-        // Enables Java compilation support.
-        // This improves build times when Java compilation is not needed
-        withJava()
-
-
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
-
-        }
-
-
-        withHostTestBuilder {
-        }
-
-        withDeviceTestBuilder {
-            sourceSetTreeName = "test"
-        }.configure {
-            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        }
-    }
-
-    /* ************** iOS targets configurations ************** */
-    // For iOS targets, this is also where you should
-    // configure native binary output. For more information, see:
-    // https://kotlinlang.org/docs/multiplatform-build-native-binaries.html#build-xcframeworks
-
-    // A step-by-step guide on how to include this library in an XCode
-    // project can be found here:
-    // https://developer.android.com/kotlin/multiplatform/migrate
-
-    val spmFrameworkName = "KMPSharedLibrary"
-
-    val iOSTargets = listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    )
-
-    val xcFramework = XCFramework(xcFrameworkName = spmFrameworkName)
-
-    iOSTargets.forEach { target ->
-        target.binaries.framework {
-            baseName = spmFrameworkName
-            xcFramework.add(this)
-            isStatic = true
-        }
-
-    }
-
+    configureIOSLibrary()
 
     // Source set declarations.
     // Declaring a target automatically creates a source set with the same name. By default, the
@@ -77,7 +114,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.kotlin.stdlib)
                 // Add KMP dependencies here
             }
         }
@@ -117,62 +153,26 @@ kotlin {
 
 }
 
-group = "io.github"
-version = "1.0.0"
 
-publishing {
-    repositories {
-
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/dmytro-ipatii-aalto/KMPSharedLibrary")
-            credentials {
-                username = providers.gradleProperty("githubPackagesUsername")
-                    .orElse(providers.environmentVariable("USER_NAME"))
-                    .get()
-
-                password = providers.gradleProperty("githubPackagesPassword")
-                    .orElse(providers.environmentVariable("DEV_ACCESS_TOKEN"))
-                    .get()
-            }
-        }
-    }
-}
+group = providers.gradleProperty("GROUP_ID").get()
+version = providers.gradleProperty("VERSION_NAME").get()
 
 mavenPublishing {
+
+    publishing {
+        repositories {
+            maven {
+                name = providers.gradleProperty("MAVEN_REPOSITORY_NAME").get()
+                url = uri(providers.gradleProperty("MAVEN_REPOSITORY_URL").get())
+                credentials(PasswordCredentials::class)
+            }
+        }
+    }
+
     // Define coordinates for the published artifact
     coordinates(
-        artifactId = "kmpsharedlibrary",
+        artifactId = providers.gradleProperty("ARTIFACT_ID").get(),
     )
 
-
-
-    // Configure POM metadata for the published artifact
-    pom {
-        name.set("KMP Shared Library")
-        description.set("Sample Kotlin Multiplatform Library")
-        url.set("https://github.com/dmytro-ipatii-aalto/KMPSharedLibrary")
-
-        licenses {
-            license {
-                name.set("MIT")
-                url.set("https://opensource.org/licenses/MIT")
-            }
-        }
-
-        developers {
-            developer {
-                id.set("dmytro-ipatii-aalto")
-                name.set("Dmytro Ipatii")
-            }
-        }
-
-        scm {
-            url.set("https://github.com/dmytro-ipatii-aalto/KMPSharedLibrary")
-            connection.set("scm:git:git://github.com/dmytro-ipatii-aalto/KMPSharedLibrary.git")
-            developerConnection.set("scm:git:ssh://git@github.com/dmytro-ipatii-aalto/KMPSharedLibrary.git")
-        }
-
-    }
 }
 

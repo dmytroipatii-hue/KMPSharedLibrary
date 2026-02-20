@@ -3,21 +3,21 @@ import kotlin.js.JsExport
 
 @OptIn(kotlin.js.ExperimentalJsExport::class)
 @JsExport
-class PlatformInfo {
+public class PlatformInfo {
 
     private val platform: Platform = platform()
 
-    fun getGreetingText(): String {
+    public fun getGreetingText(): String {
         return "Hello, ${platform.name}"
     }
 
-    fun getPlatformName(): String {
+    public fun getPlatformName(): String {
         println("Version 1.0.0")
         println("Platform Name: ${platform.name}")
         return platform.name
     }
 
-    fun getPlatformVersion(): Double {
+    public fun getPlatformVersion(): Double {
         println("Platform Version: ${platform.version}")
         return platform.version
     }

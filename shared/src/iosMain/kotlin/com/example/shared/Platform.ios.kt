@@ -8,4 +8,4 @@ private class IOSPlatform: Platform {
     override val version: Double = UIDevice.currentDevice.systemVersion().toDouble()
 }
 
-actual fun platform(): Platform = IOSPlatform()
+public actual fun platform(): Platform = IOSPlatform()

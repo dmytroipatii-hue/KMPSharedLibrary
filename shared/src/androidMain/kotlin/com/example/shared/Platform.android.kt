@@ -8,4 +8,4 @@ private class AndroidPlatform: Platform {
     override val version: Double = Build.VERSION.SDK_INT.toDouble()
 }
 
-actual fun platform(): Platform = AndroidPlatform()
+public actual fun platform(): Platform = AndroidPlatform()

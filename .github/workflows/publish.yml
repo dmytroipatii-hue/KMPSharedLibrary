@@ -13,10 +13,6 @@ jobs:
 
         env:
             FRAMEWORK_NAME: KMPSharedLibrary
-            GROUP_ID: com.yourcompany
-            ARTIFACT_ID: shared-logic
-            USER_NAME: ${{ secrets.USER_NAME }}
-            ACCESS_TOKEN: ${{secrets.DEV_ACCESS_TOKEN}}
 
         steps:
             # ---------------------------
@@ -45,14 +41,16 @@ jobs:
                 VERSION=${GITHUB_REF#refs/tags/v}
                 echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-
+            
             # ---------------------------
             # Android CONFIGUARATIONS
             # ---------------------------
             - name: Add Gradle Properties
               run: |
-                echo "githubPackagesUsername=${{env.USER_NAME}}" >> gradle.properties
-                echo "githubPackagesPassword=${{env.ACCESS_TOKEN}}}" >> gradle.properties
+                echo "GitHubPackagesUsername=${{secrets.USER_NAME}}" >> gradle.properties
+                echo "GithubPackagesPassword=${{secrets.DEV_ACCESS_TOKEN}}}" >> gradle.properties
+                echo "FRAMEWORK_NAME=${{env.FRAMEWORK_NAME}}" >> gradle.properties
+                echo "VERSION_NAME=${{ steps.version.outputs.version }} >> gradle.properties
 
             - name: Publish Android Packages
               run: |
@@ -61,13 +59,13 @@ jobs:
             # ---------------------------
             # iOS CONFIGUARATIONS
             # ---------------------------
-            - name: Build XCFramework
-              run: ./gradlew assemble${{ env.FRAMEWORK_NAME }}XCFramework
+            - name: Build XCFramework release
+              run: ./gradlew assemble${{ env.FRAMEWORK_NAME }}ReleaseXCFramework
 
             - name: Publish XCFramework to SPM repo
               run: |
                 # Clone SPM repo
-                git clone https://x-access-token:${{ env.ACCESS_TOKEN }}@github.com/${{env.USER_NAME}}/SPMSharedLibrary.git
+                git clone https://x-access-token:${{ secrets.DEV_ACCESS_TOKEN }}@github.com/${{secrets.USER_NAME}}/${{env.FRAMEWORK_NAME}}}.git
                 cd SPMSharedLibrary
 
                 # Clean old framework
@@ -78,7 +76,7 @@ jobs:
                     ${{ env.FRAMEWORK_NAME }}.xcframework
 
                 # Git config
-                git config user.name "${{ env.USER_NAME }}"
+                git config user.name "${{ secrets.USER_NAME }}"
 
                 # Commit & tag
                 git add ${{ env.FRAMEWORK_NAME }}.xcframework

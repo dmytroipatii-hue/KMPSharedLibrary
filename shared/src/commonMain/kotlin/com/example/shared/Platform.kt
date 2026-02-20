@@ -1,8 +1,8 @@
 package com.example.shared
 
-interface Platform {
-    val name: String
-    val version: Double
+public interface Platform {
+    public val name: String
+    public val version: Double
 }
 
-expect fun platform(): Platform
+public expect fun platform(): Platform

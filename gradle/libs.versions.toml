@@ -32,3 +32,4 @@ android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.
 android-lint = { id = "com.android.lint", version.ref = "agp" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }
 
+
