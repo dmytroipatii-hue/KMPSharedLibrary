@@ -1,6 +1,8 @@
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import org.gradle.api.credentials.PasswordCredentials
+import org.gradle.util.GradleVersion.version
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
@@ -12,10 +14,10 @@ plugins {
 
 
 // Shared Configurations
-val libraryGroup = providers.gradleProperty("LIBRARY_GROUP").get()
-val libraryArtifactId = providers.gradleProperty("LIBRARY_ARTIFACT_ID").get()
-val libraryVersion = providers.gradleProperty("LIBRARY_VERSION").get()
-val libraryIdentifier = providers.gradleProperty("LIBRARY_IDENTIFIER").get()
+val libraryGroup: String = providers.gradleProperty("LIBRARY_GROUP").get()
+val libraryArtifactId: String = providers.gradleProperty("LIBRARY_ARTIFACT_ID").get()
+val libraryVersion: String = providers.gradleProperty("LIBRARY_VERSION").get()
+val libraryIdentifier: String = providers.gradleProperty("LIBRARY_IDENTIFIER").get()
 
 
 
@@ -31,6 +33,13 @@ private fun Project.configureKMPLibrary() {
 
     }
 }
+
+internal fun KotlinMultiplatformExtension.androidLibrary(
+    block: KotlinMultiplatformAndroidLibraryTarget.() -> Unit
+) {
+    configure<KotlinMultiplatformAndroidLibraryTarget>(block)
+}
+
 private fun Project.configureAndroidLibrary() {
     extensions.configure(KotlinMultiplatformExtension::class.java){
 
@@ -79,7 +88,7 @@ private fun Project.configureIOSLibrary() {
         // https://kotlinlang.org/docs/multiplatform-build-native-binaries.html#build-xcframeworks
 
         val iOSTargets = listOf(
-            iosX64(),
+            //iosX64(),
             iosArm64(),
             iosSimulatorArm64()
         )
